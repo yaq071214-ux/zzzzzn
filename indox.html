@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>问问他吧</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+–bg: #0d0d14;
+–surface: #13131f;
+–border: #2a2a40;
+–accent: #a8d8ff;
+–accent2: #ffc8f0;
+–text: #e8e8f5;
+–muted: #6060a0;
+–oc-name: #a8d8ff;
+–glow: rgba(168, 216, 255, 0.15);
+}
+
+- { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+background: var(–bg);
+color: var(–text);
+font-family: ‘Noto Serif SC’, serif;
+min-height: 100vh;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 24px 16px;
+overflow-x: hidden;
+}
+
+/* pixel grid background */
+body::before {
+content: ‘’;
+position: fixed;
+inset: 0;
+background-image:
+linear-gradient(rgba(168,216,255,0.03) 1px, transparent 1px),
+linear-gradient(90deg, rgba(168,216,255,0.03) 1px, transparent 1px);
+background-size: 32px 32px;
+pointer-events: none;
+z-index: 0;
+}
+
+.container {
+position: relative;
+z-index: 1;
+width: 100%;
+max-width: 480px;
+}
+
+/* header */
+.header {
+text-align: center;
+margin-bottom: 32px;
+}
+
+.avatar-wrap {
+position: relative;
+display: inline-block;
+margin-bottom: 16px;
+}
+
+.avatar {
+width: 88px;
+height: 88px;
+border-radius: 50%;
+border: 2px solid var(–accent);
+object-fit: cover;
+display: block;
+background: var(–surface);
+image-rendering: pixelated;
+}
+
+/* placeholder avatar if no image */
+.avatar-placeholder {
+width: 88px;
+height: 88px;
+border-radius: 50%;
+border: 2px solid var(–accent);
+background: var(–surface);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 36px;
+box-shadow: 0 0 20px var(–glow);
+}
+
+.avatar-ring {
+position: absolute;
+inset: -6px;
+border-radius: 50%;
+border: 1px solid rgba(168,216,255,0.2);
+animation: ring-spin 8s linear infinite;
+}
+
+@keyframes ring-spin {
+to { transform: rotate(360deg); }
+}
+
+.ring-dot {
+position: absolute;
+top: 4px;
+left: 50%;
+transform: translateX(-50%);
+width: 5px;
+height: 5px;
+border-radius: 50%;
+background: var(–accent);
+box-shadow: 0 0 8px var(–accent);
+}
+
+.oc-name {
+font-size: 22px;
+font-weight: 700;
+color: var(–oc-name);
+letter-spacing: 0.1em;
+text-shadow: 0 0 20px rgba(168,216,255,0.4);
+margin-bottom: 4px;
+}
+
+.oc-tag {
+font-size: 11px;
+font-family: ‘Share Tech Mono’, monospace;
+color: var(–muted);
+letter-spacing: 0.2em;
+text-transform: uppercase;
+}
+
+/* chat area */
+.chat-area {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 16px;
+padding: 20px;
+min-height: 160px;
+margin-bottom: 20px;
+position: relative;
+overflow: hidden;
+}
+
+.chat-area::before {
+content: ‘’;
+position: absolute;
+top: 0; left: 0; right: 0;
+height: 1px;
+background: linear-gradient(90deg, transparent, var(–accent), transparent);
+opacity: 0.4;
+}
+
+.bubble-wrap {
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+
+.bubble {
+display: flex;
+gap: 10px;
+align-items: flex-start;
+animation: fadeup 0.3s ease;
+}
+
+@keyframes fadeup {
+from { opacity: 0; transform: translateY(8px); }
+to   { opacity: 1; transform: translateY(0); }
+}
+
+.bubble.user { flex-direction: row-reverse; }
+
+.bubble-avatar {
+width: 28px;
+height: 28px;
+border-radius: 50%;
+background: var(–border);
+flex-shrink: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 14px;
+border: 1px solid var(–border);
+}
+
+.bubble-avatar.oc-av {
+border-color: var(–accent);
+background: rgba(168,216,255,0.08);
+color: var(–accent);
+font-size: 12px;
+}
+
+.bubble-text {
+max-width: 80%;
+padding: 10px 14px;
+border-radius: 12px;
+font-size: 14px;
+line-height: 1.7;
+}
+
+.bubble.oc .bubble-text {
+background: rgba(168,216,255,0.07);
+border: 1px solid rgba(168,216,255,0.15);
+border-radius: 4px 12px 12px 12px;
+color: var(–text);
+}
+
+.bubble.user .bubble-text {
+background: rgba(255,200,240,0.07);
+border: 1px solid rgba(255,200,240,0.15);
+border-radius: 12px 4px 12px 12px;
+color: var(–text);
+}
+
+/* default hint */
+.hint-text {
+color: var(–muted);
+font-size: 13px;
+text-align: center;
+font-family: ‘Share Tech Mono’, monospace;
+line-height: 1.8;
+padding: 20px 0;
+}
+
+.hint-text span {
+display: block;
+font-size: 11px;
+margin-top: 8px;
+opacity: 0.6;
+letter-spacing: 0.1em;
+}
+
+/* typing indicator */
+.typing {
+display: flex;
+gap: 4px;
+align-items: center;
+padding: 12px 14px;
+}
+
+.typing-dot {
+width: 5px; height: 5px;
+border-radius: 50%;
+background: var(–accent);
+opacity: 0.4;
+animation: blink 1.2s infinite;
+}
+
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes blink {
+0%, 100% { opacity: 0.2; transform: scale(0.8); }
+50% { opacity: 1; transform: scale(1); }
+}
+
+/* input area */
+.input-row {
+display: flex;
+gap: 10px;
+align-items: center;
+}
+
+.input-field {
+flex: 1;
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 12px;
+padding: 12px 16px;
+color: var(–text);
+font-family: ‘Noto Serif SC’, serif;
+font-size: 14px;
+outline: none;
+transition: border-color 0.2s;
+}
+
+.input-field::placeholder {
+color: var(–muted);
+font-size: 13px;
+}
+
+.input-field:focus {
+border-color: rgba(168,216,255,0.4);
+box-shadow: 0 0 0 3px rgba(168,216,255,0.05);
+}
+
+.send-btn {
+width: 44px; height: 44px;
+border-radius: 12px;
+background: rgba(168,216,255,0.1);
+border: 1px solid rgba(168,216,255,0.25);
+color: var(–accent);
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+transition: all 0.2s;
+font-size: 18px;
+}
+
+.send-btn:hover {
+background: rgba(168,216,255,0.18);
+box-shadow: 0 0 12px rgba(168,216,255,0.2);
+}
+
+.send-btn:active { transform: scale(0.94); }
+
+/* footer tip */
+.footer {
+text-align: center;
+margin-top: 16px;
+font-family: ‘Share Tech Mono’, monospace;
+font-size: 10px;
+color: var(–muted);
+letter-spacing: 0.15em;
+opacity: 0.5;
+}
+
+/* scrollbar */
+.bubble-wrap::-webkit-scrollbar { width: 4px; }
+.bubble-wrap::-webkit-scrollbar-thumb { background: var(–border); border-radius: 2px; }
+</style>
+
+</head>
+<body>
+<div class="container">
+
+  <!-- ===== HEADER: OC信息 ===== -->
+
+  <div class="header">
+    <div class="avatar-wrap">
+      <!--
+        如果有OC图片，替换下面这行：
+        < img class="avatar" src="你的OC图片路径" alt="OC头像">
+        暂时先用emoji占位 ↓
+      -->
+        <img class="avatar" src="微信图片_20260315180113_174_143.jpg" alt="OC头像">
+      <div class="avatar-ring"><div class="ring-dot"></div></div>
+    </div>
+    <div class="oc-name">【沈嘉川】</div>  <!-- ← 改这里 -->
+    <div class="oc-tag">Original Character · Ask me anything</div>
+  </div>
+
+  <!-- ===== 对话区域 ===== -->
+
+  <div class="chat-area">
+    <div class="bubble-wrap" id="chatWrap">
+      <div class="hint-text" id="hintText">
+        向TA提问吧——
+        <span>试着问问 "你叫什么" "你喜欢什么" "你几岁"</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 输入框 ===== -->
+
+  <div class="input-row">
+    <input
+      class="input-field"
+      id="inputField"
+      type="text"
+      placeholder="输入你的问题……"
+      maxlength="60"
+      autocomplete="off"
+    />
+    <button class="send-btn" id="sendBtn" onclick="handleSend()">↑</button>
+  </div>
+
+  <div class="footer">像素小川 · HTML+JS 关键词匹配</div>
+</div>
+
+<script>
+// ============================================================
+//  ★ 在这里编辑你的OC问答库 ★
+//  格式：{ keys: ['触发词1','触发词2'], reply: 'OC回答' }
+//  keys 里的词只要出现在问题中就会匹配
+// ============================================================
+const QA = [
+  {
+    keys: ['名字','叫什么','你是谁','名称'],
+    reply: '我叫沈嘉川，不过很少有人会直接叫我全名。'
+  },
+  {
+    keys: ['几岁','多大','年龄','生日'],
+    reply: '21岁，不过岁数对我来说从来不是什么重要的事。'
+  },
+  {
+    keys: ['喜欢','爱好','兴趣'],
+    reply: '我喜欢去世界各地学习不同的文化，喜欢吃甜食，喜欢在夜晚散步。'
+  },
+  {
+    keys: ['害怕','恐惧','怕什么'],
+    reply: '讨厌黑。不喜欢自己一个人。'
+  },
+  {
+    keys: ['朋友','在乎','重要的人'],
+    reply: '我不知道，我不知道什么算朋友，什么算在乎，什么样的人才能是重要的人。'
+  },
+  {
+    keys: ['梦想','目标','想做'],
+    reply: '我目前没有什么和这方面有关的想法，要说有的话那应该就是活到26岁吧。'
+  },
+  {
+    keys: ['你好','hello','hi','嗨','哈喽'],
+    reply: '……你好。有什么事吗？'
+  },
+  {
+    keys: ['再见','拜拜','goodbye'],
+    reply: '嗯。路上小心。'
+  },
+];
+
+// 没有匹配到关键词时的默认回答（可以多写几条，会随机选）
+const fallbacks = [
+  '……这个问题让我想了很久，但还是没有答案。',
+  '有些事我不太擅长说清楚。',
+  '嗯。我不知道该怎么回答你。',
+  '（沉默片刻）……算了，我不说了。',
+];
+
+// ============================================================
+//  以下是逻辑部分，一般不需要改动
+// ============================================================
+const OC_NAME = '【沈嘉川】'; // 对话框里显示的OC称呼，改成OC名字即可
+const USER_ICON = '🙋';
+const OC_ICON = '🌙'; // 和头像区保持一致
+
+let hintRemoved = false;
+
+function removeHint() {
+  if (!hintRemoved) {
+    document.getElementById('hintText')?.remove();
+    hintRemoved = true;
+  }
+}
+
+function addBubble(text, role) {
+  const wrap = document.getElementById('chatWrap');
+  const bubble = document.createElement('div');
+  bubble.className = `bubble ${role}`;
+
+  const av = document.createElement('div');
+  av.className = 'bubble-avatar' + (role === 'oc' ? ' oc-av' : '');
+  av.textContent = role === 'oc' ? OC_ICON : USER_ICON;
+
+  const textEl = document.createElement('div');
+  textEl.className = 'bubble-text';
+  textEl.textContent = text;
+
+  bubble.appendChild(av);
+  bubble.appendChild(textEl);
+  wrap.appendChild(bubble);
+  bubble.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+function addTyping() {
+  const wrap = document.getElementById('chatWrap');
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble oc';
+  bubble.id = 'typingBubble';
+
+  const av = document.createElement('div');
+  av.className = 'bubble-avatar oc-av';
+  av.textContent = OC_ICON;
+
+  const typing = document.createElement('div');
+  typing.className = 'bubble-text';
+  typing.innerHTML = '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+
+  bubble.appendChild(av);
+  bubble.appendChild(typing);
+  wrap.appendChild(bubble);
+  bubble.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+function removeTyping() {
+  document.getElementById('typingBubble')?.remove();
+}
+
+function matchReply(input) {
+  const lower = input.toLowerCase();
+  for (const qa of QA) {
+    if (qa.keys.some(k => lower.includes(k.toLowerCase()))) {
+      return qa.reply;
+    }
+  }
+  return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+}
+
+function handleSend() {
+  const field = document.getElementById('inputField');
+  const text = field.value.trim();
+  if (!text) return;
+
+  removeHint();
+  addBubble(text, 'user');
+  field.value = '';
+
+  addTyping();
+
+  // 模拟OC思考延迟（0.8~1.4秒）
+  const delay = 800 + Math.random() * 600;
+  setTimeout(() => {
+    removeTyping();
+    addBubble(matchReply(text), 'oc');
+  }, delay);
+}
+
+// 回车发送
+document.getElementById('inputField').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleSend();
+});
+</script>
+
+</body>
+</html>
